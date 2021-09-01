@@ -98,28 +98,30 @@ export const Todos = () => {
         <div className="loader">Loading...</div>
       ) : (
         <>
-          <AddTodo
-            handleChange={handleChange}
-            handleSubmitTodo={handleSubmitTodo}
-            task={task}
-          />
-          <div className="h-10" />
-          {todos.map((todo) => (
-            <Row key={todo.id} todo={todo} />
-          ))}
-          {!hasTodos && connected && (
-            <p className="mb-5 text-xl text-red-500 uppercase">
-              Please add a todo!
-            </p>
-          )}
-
           {connected ? (
-            <button
-              onClick={handleDisconnect}
-              className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded"
-            >
-              Logout
-            </button>
+            <>
+              <AddTodo
+                handleChange={handleChange}
+                handleSubmitTodo={handleSubmitTodo}
+                task={task}
+              />
+              <div className="h-10" />
+              {todos.map((todo) => (
+                <Row key={todo.id} todo={todo} />
+              ))}
+              {!hasTodos && (
+                <p className="mb-5 text-xl text-red-500 uppercase">
+                  Please add a todo!
+                </p>
+              )}
+
+              <button
+                onClick={handleDisconnect}
+                className="bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 px-4 border-b-4 border-blue-700 hover:border-blue-500 rounded"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <button
               onClick={fetch}
