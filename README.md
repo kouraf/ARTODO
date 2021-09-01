@@ -10,7 +10,7 @@ this will run a local slim gateway on `http://localhost:1984`
 
 3- Run
 
-`yarn test`
+`yarn start`
 
 or
 
