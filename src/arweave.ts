@@ -1,9 +1,17 @@
-import Arweave from "arweave";
-import ArDB from "ardb";
+import Blockweave from "blockweave";
+import Schema, { registerSchema } from "ardb";
+import { Todo } from "./types";
 
-export const arweave = Arweave.init({
-  host: process.env.REACT_APP_AR_HOST || "127.0.0.1",
-  port: process.env.REACT_APP_AR_PORT || 1984,
-  protocol: "http",
-});
-export const ardb = new ArDB(arweave);
+const blockweave = new Blockweave({ url: process.env.REACT_APP_GATEWAY || "http://localhost:1984" });
+
+export const TODO = new Schema<Todo>(
+  {
+    id: { type: "string" },
+    isCompleted: { type: "boolean" },
+    task: { type: "string" },
+    owner: { type: "string" },
+  },
+  blockweave,
+  "use_wallet"
+);
+registerSchema("TODO", TODO);

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Row } from "./Row";
 import { AddTodo } from "./AddTodo";
 import { Todo } from "../types";
-import { ardb, arweave } from "../arweave";
+import { TODO } from "../arweave";
 
 import "./loader.css";
 
@@ -13,6 +13,7 @@ export const Todos = () => {
   const [task, setTask] = useState("");
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
+  const [owner, setOwner] = useState("");
   const hasTodos = todos.length > 0;
 
   async function fetch() {
@@ -20,23 +21,13 @@ export const Todos = () => {
       .connect(["ACCESS_ADDRESS", "SIGN_TRANSACTION"])
       .then(() => {
         setConnected(true);
-        return window.arweaveWallet.getActiveAddress().then((walletAddress) =>
-          ardb
-            .search("transactions")
-            .from(walletAddress)
-            .find()
-            .then((txs) =>
-              Promise.all(
-                txs.map((ts) =>
-                  arweave.transactions
-                    .getData(ts.id, { decode: true, string: true })
-                    .then((data) => JSON.parse(data as string))
-                    .catch(console.log)
-                )
-              ).then((transactions) =>
-                setTodos(transactions.filter((trnsaction) => trnsaction))
-              )
-            )
+        return window.arweaveWallet.getActiveAddress().then(async (walletAddress) =>
+          {
+            setOwner(walletAddress)
+            const todos = await TODO.findMany({owner:walletAddress})
+            if(todos)
+            setTodos(todos)
+          }
         );
       })
       .catch(console.log);
@@ -55,13 +46,7 @@ export const Todos = () => {
   const handleAddTodo = async (todo: Todo) => {
     try {
       setLoading(true);
-      const tx = await arweave.createTransaction({
-        data: JSON.stringify(todo),
-      });
-
-      await arweave.transactions.sign(tx);
-
-      await arweave.transactions.post(tx);
+      await TODO.create(todo)
 
       setTask("");
       fetch();
@@ -82,6 +67,7 @@ export const Todos = () => {
       id: uuidv4(),
       task: task,
       isCompleted: false,
+      owner
     };
     task && handleAddTodo(todo);
   };
