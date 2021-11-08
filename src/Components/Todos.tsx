@@ -1,12 +1,14 @@
 import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 import { Row } from "./Row";
 import { AddTodo } from "./AddTodo";
-import { Todo } from "../types";
+import { Todo as ITodo } from "../types";
 import { TODO } from "../arweave";
+import { Document } from "ardb/lib/faces/document";
 
 import "./loader.css";
+
+type Todo = ITodo & Document
 
 export const Todos = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -25,8 +27,9 @@ export const Todos = () => {
           {
             setOwner(walletAddress)
             const todos = await TODO.findMany({owner:walletAddress})
+            
             if(todos)
-            setTodos(todos)
+            setTodos(todos as Todo[])
           }
         );
       })
@@ -43,12 +46,22 @@ export const Todos = () => {
     })();
   }, []);
 
-  const handleAddTodo = async (todo: Todo) => {
+  const handleAddTodo = async (todo: ITodo) => {
     try {
       setLoading(true);
       await TODO.create(todo)
 
       setTask("");
+      fetch();
+    } catch (error) {
+      console.log("error :", error);
+    }
+  };
+  const handleDone = async (todo: Todo) => {
+    try {
+      setLoading(true);
+      await TODO.updateById(todo._id,{...todo,isCompleted:!todo.isCompleted})
+
       fetch();
     } catch (error) {
       console.log("error :", error);
@@ -64,7 +77,6 @@ export const Todos = () => {
     e.preventDefault();
 
     const todo = {
-      id: uuidv4(),
       task: task,
       isCompleted: false,
       owner
@@ -93,7 +105,7 @@ export const Todos = () => {
               />
               <div className="h-10" />
               {todos.map((todo) => (
-                <Row key={todo.id} todo={todo} />
+                <Row key={todo._id} todo={todo} handleDone={handleDone} />
               ))}
               {!hasTodos && (
                 <p className="mb-5 text-xl text-red-500 uppercase">

@@ -6,7 +6,6 @@ const blockweave = new Blockweave({ url: process.env.REACT_APP_GATEWAY || "http:
 
 export const TODO = new Schema<Todo>(
   {
-    id: { type: "string" },
     isCompleted: { type: "boolean" },
     task: { type: "string" },
     owner: { type: "string" },
