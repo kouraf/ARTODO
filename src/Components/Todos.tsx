@@ -1,18 +1,21 @@
 import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 import { Row } from "./Row";
 import { AddTodo } from "./AddTodo";
-import { Todo } from "../types";
-import { ardb, arweave } from "../arweave";
+import { Todo as ITodo } from "../types";
+import { TODO } from "../arweave";
+import { Document } from "ardb/lib/faces/document";
 
 import "./loader.css";
+
+type Todo = ITodo & Document
 
 export const Todos = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [task, setTask] = useState("");
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
+  const [owner, setOwner] = useState("");
   const hasTodos = todos.length > 0;
 
   async function fetch() {
@@ -20,23 +23,14 @@ export const Todos = () => {
       .connect(["ACCESS_ADDRESS", "SIGN_TRANSACTION"])
       .then(() => {
         setConnected(true);
-        return window.arweaveWallet.getActiveAddress().then((walletAddress) =>
-          ardb
-            .search("transactions")
-            .from(walletAddress)
-            .find()
-            .then((txs) =>
-              Promise.all(
-                txs.map((ts) =>
-                  arweave.transactions
-                    .getData(ts.id, { decode: true, string: true })
-                    .then((data) => JSON.parse(data as string))
-                    .catch(console.log)
-                )
-              ).then((transactions) =>
-                setTodos(transactions.filter((trnsaction) => trnsaction))
-              )
-            )
+        return window.arweaveWallet.getActiveAddress().then(async (walletAddress) =>
+          {
+            setOwner(walletAddress)
+            const todos = await TODO.findMany({owner:walletAddress})
+            
+            if(todos)
+            setTodos(todos as Todo[])
+          }
         );
       })
       .catch(console.log);
@@ -52,18 +46,22 @@ export const Todos = () => {
     })();
   }, []);
 
-  const handleAddTodo = async (todo: Todo) => {
+  const handleAddTodo = async (todo: ITodo) => {
     try {
       setLoading(true);
-      const tx = await arweave.createTransaction({
-        data: JSON.stringify(todo),
-      });
-
-      await arweave.transactions.sign(tx);
-
-      await arweave.transactions.post(tx);
+      await TODO.create(todo)
 
       setTask("");
+      fetch();
+    } catch (error) {
+      console.log("error :", error);
+    }
+  };
+  const handleDone = async (todo: Todo) => {
+    try {
+      setLoading(true);
+      await TODO.updateById(todo._id,{...todo,isCompleted:!todo.isCompleted})
+
       fetch();
     } catch (error) {
       console.log("error :", error);
@@ -79,9 +77,9 @@ export const Todos = () => {
     e.preventDefault();
 
     const todo = {
-      id: uuidv4(),
       task: task,
       isCompleted: false,
+      owner
     };
     task && handleAddTodo(todo);
   };
@@ -107,7 +105,7 @@ export const Todos = () => {
               />
               <div className="h-10" />
               {todos.map((todo) => (
-                <Row key={todo.id} todo={todo} />
+                <Row key={todo._id} todo={todo} handleDone={handleDone} />
               ))}
               {!hasTodos && (
                 <p className="mb-5 text-xl text-red-500 uppercase">

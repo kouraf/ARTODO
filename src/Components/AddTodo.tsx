@@ -1,3 +1,4 @@
+import React from 'react';
 import { AddTodoProps } from "../types";
 import { ReactComponent as PlusIcon } from "../assets/svg/plus.svg";
 
